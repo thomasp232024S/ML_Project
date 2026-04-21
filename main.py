@@ -4,7 +4,7 @@ import import_clinical
 from import_clinical import convert_smart
 
 if __name__ == '__main__':
-    #df = import_clinical.convert('/home/terif/Downloads/clinical.project-tcga-luad.2026-03-30.json')
+    #df = import_clinical.convert('clinical.project-tcga-luad.2026-03-30.json')
     #print(df)
     #df.to_parquet("clinical_full.parquet")
     df = pandas.read_parquet("clinical_full.parquet")
