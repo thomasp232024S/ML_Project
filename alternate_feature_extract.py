@@ -40,11 +40,7 @@ def extract_features(file : str) -> DataFrame:
         # extract gender
         gender = demo.get("gender")
         row["gender"] = (1 if gender == "male" else 0) if gender and gender.lower() != "not reported" else pd.NA
-        
-        # days to death (normalize this as well)
-        days_death = demo.get("days_to_death", pd.NA)
-        row["days_to_death"] = days_death
-        
+     
         
         # vital status
         surviving = demo.get("vital_status")
@@ -56,14 +52,12 @@ def extract_features(file : str) -> DataFrame:
 
         # Country (remember nominal)
         country = demo.get("country_of_residence_at_enrollment")
-        if not country:
-            row["country"] = pd.NA
-
-        row["is_american"] = 1 if country == "United States" else 0
-        row["is_canadian"] = 1 if country == "Canada" else 0
-        row["is_russian"] = 1 if country == "Russia" else 0
-        row["is_australian"] = 1 if country == "Australia" else 0
-        row["is_german"] = 1 if country == "Germany" else 0
+        if country:
+            row["is_american"] = 1 if country == "United States" else 0
+            row["is_canadian"] = 1 if country == "Canada" else 0
+            row["is_russian"] = 1 if country == "Russia" else 0
+            row["is_australian"] = 1 if country == "Australia" else 0
+            row["is_german"] = 1 if country == "Germany" else 0
 
 
         # latino / ethnicity
@@ -199,17 +193,11 @@ def extract_features(file : str) -> DataFrame:
         rows.append(row) # row in list represents row of DF
     
     df = pd.DataFrame(data=rows)
-    # normalize continuous / ordinarl cols to not skew log reg training
-    
-    """SCALING - maybe remove this part because of model leakage
-    """
-    continuous_cols = ["age_at_index", "pack_years_smoked","num_treatments", "ajcc_stage", "ajcc_t", "ajcc_n", "ajcc_m", "smoking_status", "ecog_performance", "Gemcitabine", "Carboplatin", "Cyclophosphamide", "Erlotinib", "Gemcitabine Hydrochloride", "Vinorelbine", "Vinorelbine Tartrate", "Cisplatin", "Docetaxel", "Erlotinib Hydrochloride", "Pemetrexed", "Pemetrexed Disodium", "Paclitaxel", "Nab-paclitaxel", "Etoposide", "Bevacizumab", "Belinostat", "Irinotecan", "Irinotecan Hydrochloride", "Topotecan", "Vinblastine", "Anastrozole", "Gefitinib", "Letrozole", "Cyanocobalamin", "Octreotide Acetate", "Denosumab", "Pegfilgrastim", "Zoledronic Acid", "Tyrosine Kinase Inhibitor", "Aurora Kinase/VEGFR2 Inhibitor CYC116", "Recombinant PRAME Protein Plus AS15 Adjuvant GSK2302025A"]
-    existing_cols = [c for c in continuous_cols if c in df.columns and df[c].notna().any()]
+
+    # clean df of all nan rows
     df = df.replace(pd.NA, np.nan)
-    df[existing_cols] = imputer.fit_transform(df[existing_cols]) # this fills in all NaN with the mean of the col
-    df[existing_cols] = scaler.fit_transform(df[existing_cols]) #normalization
     
-    return df
+    return df.loc[:, df.notna().any()] # returns new df only with cols that arent ALL nan
 
 
         
