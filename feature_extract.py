@@ -1,3 +1,5 @@
+from statistics import mean
+
 import pandas as pd
 from pandas import DataFrame
 import json
@@ -16,10 +18,11 @@ final dataframes will be merged together
 DF ENCODING
 
 """
-def extract_features(file : str) -> DataFrame:
+def extract_features(file : str, specimen_file : str) -> DataFrame:
     with open(file, 'r') as f:
         cases = json.load(f) #this converts the json object into python dict
-    
+    with open(specimen_file, 'r') as f:
+        specimens = json.load(f)
     # list to be converted to DF
     rows = []
 
@@ -29,7 +32,12 @@ def extract_features(file : str) -> DataFrame:
     # iterate through cases
     for case in cases:
         row = {}
-        
+
+        this_specimen = None
+        for specimen in specimens:
+            if specimen.get("case_id") == case.get("case_id"):
+                this_specimen = specimen
+
         # first extract demographic features
         demo = case.get("demographic") or {} # {} is just empty dict in case there is no demographic block
         # extract races
@@ -190,6 +198,55 @@ def extract_features(file : str) -> DataFrame:
                             row["ecog_performance"] = int(ecog_score)
                             break
 
+        row["tumor_cells"] = pd.NA
+        row["stromal_cells"] = pd.NA
+        row["neutrophil_infiltration"] = pd.NA
+        row["lymphocyte_infiltration"] = pd.NA
+        row["necrosis"] = pd.NA
+        row["monocyte_infiltration"] = pd.NA
+        row["rna_28s_16s_ratio"] = pd.NA
+        row["a260_a280_ratio"] = pd.NA
+
+        if this_specimen is not None:
+            tumor_cells = []
+            percent_stromal_cells = []
+            percent_neutrophil_infiltration = []
+            percent_lymphocyte_infiltration = []
+            percent_necrosis = []
+            percent_monocyte_infiltration = []
+            ribosomal_rna_28s_16s_ratio = []
+            a260_a280_ratio = []
+            for sample in this_specimen.get("samples"):
+                for portion in sample.get("portions"):
+                    if portion.__contains__("analytes"):
+                        for analyte in portion.get("analytes"):
+                            if analyte.get("ribosomal_rna_28s_16s_ratio"):
+                                ribosomal_rna_28s_16s_ratio.append(analyte.get("ribosomal_rna_28s_16s_ratio"))
+                            if analyte.get("a260_a280_ratio"):
+                                a260_a280_ratio.append(analyte.get("a260_a280_ratio"))
+                    if portion.__contains__("slides"):
+                        for slide in portion.get("slides"):
+                            if slide.get("percent_stromal_cells"):
+                                percent_stromal_cells.append(slide.get("percent_stromal_cells"))
+                            if slide.get("percent_neutrophil_infiltration"):
+                                percent_neutrophil_infiltration.append(slide.get("percent_neutrophil_infiltration"))
+                            if slide.get("percent_lymphocyte_infiltration"):
+                                percent_lymphocyte_infiltration.append(slide.get("percent_lymphocyte_infiltration"))
+                            if slide.get("percent_monocyte_infiltration"):
+                                percent_monocyte_infiltration.append(slide.get("percent_monocyte_infiltration"))
+                            if slide.get("percent_necrosis"):
+                                percent_necrosis.append(slide.get("percent_necrosis"))
+                            if slide.get("percent_tumor_cells"):
+                                tumor_cells.append(slide.get("percent_tumor_cells"))
+            row["tumor_cells"] = mean(tumor_cells) if len(tumor_cells) > 0 else pd.NA
+            row["stromal_cells"] = mean(percent_stromal_cells) if len(percent_stromal_cells) > 0 else pd.NA
+            row["neutrophil_infiltration"] = mean(percent_neutrophil_infiltration) if len(percent_neutrophil_infiltration) > 0 else pd.NA
+            row["lymphocyte_infiltration"] = mean(percent_lymphocyte_infiltration) if len(percent_lymphocyte_infiltration) > 0 else pd.NA
+            row["necrosis"] = mean(percent_necrosis) if len(percent_necrosis) > 0 else pd.NA
+            row["monocyte_infiltration"] = mean(percent_monocyte_infiltration) if len(percent_monocyte_infiltration) > 0 else pd.NA
+            row["rna_28s_16s_ratio"] = mean(ribosomal_rna_28s_16s_ratio) if len(ribosomal_rna_28s_16s_ratio) > 0 else pd.NA
+            row["a260_a280_ratio"] = mean(a260_a280_ratio) if len(a260_a280_ratio) > 0 else pd.NA
+
         rows.append(row) # row in list represents row of DF
     
     df = pd.DataFrame(data=rows)
@@ -198,6 +255,8 @@ def extract_features(file : str) -> DataFrame:
     df = df.replace(pd.NA, np.nan)
     
     return df.loc[:, df.notna().any()] # returns new df only with cols that arent ALL nan
+
+#def normalize_features(df : DataFrame) -> DataFrame:
 
 
         
