@@ -47,7 +47,7 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
 
         # extract gender
         gender = demo.get("gender")
-        row["gender"] = (1 if gender == "male" else 0) if gender and gender.lower() != "not reported" else pd.NA
+        #row["gender"] = (1 if gender == "male" else 0) if gender and gender.lower() != "not reported" else pd.NA
      
         
         # vital status

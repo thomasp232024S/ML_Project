@@ -5,13 +5,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay, confusion_matrix
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from sklearn.impute import SimpleImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import SimpleImputer, IterativeImputer, KNNImputer
 import matplotlib.pyplot as plt
 import numpy as np
 
 #initialize scaler and imputer
 scaler = StandardScaler()
-imputer = SimpleImputer(strategy="median")
+imputer = KNNImputer(n_neighbors=5, weights="uniform")
 
 
 
