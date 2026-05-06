@@ -7,6 +7,10 @@ from sklearn.metrics import accuracy_score, classification_report, ConfusionMatr
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import SimpleImputer, IterativeImputer, KNNImputer
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -53,6 +57,28 @@ if __name__ == "__main__":
 
     print(f"Accuracy: {accuracy}")
     print(f"Classification Report: {report}")
+
+
+    models = {
+        "Logistic Regression" : LogisticRegression(
+            max_iter=1000,
+            class_weight="balanced"
+        ),
+
+        "Decision Tree" : DecisionTreeClassifier(
+            max_depth=5,
+            random_state=12
+        ),
+        
+        "Random Forest" : RandomForestClassifier(
+            n_estimators=100,
+            random_state=12
+        ),
+
+        "SVM" : SVC(kernel='rbf',probability = True),
+
+        "KNN" : KNeighborsClassifier(n_neighbors=5)
+    }
 
 """TO-DO -
 - create model pipeline as showed in class example
