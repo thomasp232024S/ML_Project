@@ -42,8 +42,8 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
         demo = case.get("demographic") or {} # {} is just empty dict in case there is no demographic block
         # extract races
         race = demo.get("race")
-        row["is_white"] = (1 if race == "white" else 0) if race and race.lower() != "not reported" else pd.NA
-        #row["is_black"] = (1 if race == "black or african american" else 0) if race and race.lower() != "not reported" else pd.NA
+        #row["is_white"] = (1 if race == "white" else 0) if race and race.lower() != "not reported" else pd.NA
+        row["is_black"] = (1 if race == "black or african american" else 0) if race and race.lower() != "not reported" else pd.NA
 
         # extract gender
         gender = demo.get("gender")
@@ -56,12 +56,12 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
 
         # age at index - REMEMBER TO NORMALIZE AFTER
         age = demo.get("age_at_index")
-        #row["age_at_index"] = age
+        row["age_at_index"] = age
 
         # Country (remember nominal)
         country = demo.get("country_of_residence_at_enrollment")
         if country:
-            #row["is_american"] = 1 if country == "United States" else 0
+            row["is_american"] = 1 if country == "United States" else 0
             #row["is_canadian"] = 1 if country == "Canada" else 0
             row["is_russian"] = 1 if country == "Russia" else 0
             row["is_australian"] = 1 if country == "Australia" else 0
@@ -70,11 +70,11 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
 
         # latino / ethnicity
         ethnicity = demo.get("ethnicity")
-        # if not ethnicity or ethnicity == "not reported":
-        #     row["is_latino"] = pd.NA
-        # else:
-        #     row["is_latino"] = 1 if ethnicity == "hispanic or latino" else 0
-        
+        if not ethnicity or ethnicity == "not reported":
+            row["is_latino"] = pd.NA
+        else:
+            row["is_latino"] = 1 if ethnicity == "hispanic or latino" else 0
+
 
         # case_id
         id = case.get("case_id")
@@ -99,10 +99,10 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
 
 
             }
-            #row["smoking_status"] = SMOKING_STATUS.get(exposures[0]["tobacco_smoking_status"], pd.NA)
+            row["smoking_status"] = SMOKING_STATUS.get(exposures[0]["tobacco_smoking_status"], pd.NA)
             # pack years smoked (remember to normalize as well)
             pack_years = exposures[0].get("pack_years_smoked", None)
-            #row["pack_years_smoked"] = pack_years if pack_years != None else pd.NA
+            row["pack_years_smoked"] = pack_years if pack_years != None else pd.NA
 
 
         # initialize treatments to 0
@@ -192,17 +192,17 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
             t = primary_diagnosis.get("ajcc_pathologic_t")
             row["ajcc_t"] = pd.NA if not t or t[1] == "X" else int(t[1])
             n = primary_diagnosis.get("ajcc_pathologic_n")
-            #row["ajcc_n"] = pd.NA if not n or n[1] == "X" else int(n[1])
+            row["ajcc_n"] = pd.NA if not n or n[1] == "X" else int(n[1])
 
             # laterality (what side of the body the cancer is on)
             l = primary_diagnosis.get("laterality")
-            #row["is_left_lateral"] = 0 #init to 0
+            row["is_left_lateral"] = 0 #init to 0
             row["is_right_lateral"] = 0
-            #row["is_bilateral"] = 0
+            row["is_bilateral"] = 0
             if l:
-                #row["is_left_lateral"] = 1 if l == "Left" else 0
+                row["is_left_lateral"] = 1 if l == "Left" else 0
                 row["is_right_lateral"] = 1 if l == "Right" else 0
-                #row["is_bilateral"] = 1 if l == "Bilateral" else 0
+                row["is_bilateral"] = 1 if l == "Bilateral" else 0
 
 
             # now  different treatments and drugs within the primary diagnosis
@@ -251,7 +251,7 @@ def extract_features(file : str, specimen_file : str) -> DataFrame:
 
                 # prior malignancy
                 pm = primary_diagnosis.get("prior_malignancy")
-                #row["had_prior_malignancy"] = (1 if pm == "yes" else 0) if pm else pd.NA
+                row["had_prior_malignancy"] = (1 if pm == "yes" else 0) if pm else pd.NA
 
                 # follow-ups extraction - first do ecog scores
                 # find the first follow up with an ecog score
