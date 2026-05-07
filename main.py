@@ -28,15 +28,11 @@ if __name__ == "__main__":
     y = df["vital_status"]
     X = df.drop(columns=["vital_status", "case_id"])
 
+    #impute NaN values in training data
     imputer.fit(X)
     X = imputer.transform(X)
     # now define datasets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=12)
-
-    # impute all nan for logistic regression based on median of training data
-    #imputer.fit(X_train)
-    #X_train = imputer.transform(X_train)
-    #X_test = imputer.transform(X_test)
 
 
     # now do the same but with scaling
