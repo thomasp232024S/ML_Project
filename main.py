@@ -11,48 +11,50 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.compose import ColumnTransformer
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 #initialize scaler and imputer
 scaler = StandardScaler()
 imputer = KNNImputer(n_neighbors=5, weights="uniform")
 
-
+df = extract_features(
+    "clinical.project-tcga-luad.2026-03-30.json",
+    "biospecimen.project-tcga-luad.2026-03-30.json"
+)
 
 if __name__ == "__main__":
     
-    df = extract_features("clinical.project-tcga-luad.2026-03-30.json", "biospecimen.project-tcga-luad.2026-03-30.json")
-
-    # logistic regression model
     y = df["vital_status"]
     X = df.drop(columns=["vital_status", "case_id"])
 
-    #impute NaN values in training data
-    imputer.fit(X)
-    X = imputer.transform(X)
-    # now define datasets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=12)
+    binary_cols = [col for col in X.columns if X[col].dropna().nunique() == 2]
+    numeric_cols = [col for col in X.columns if col not in binary_cols]
 
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.25,
+        random_state=12,
+        stratify=y
+    )
 
-    # now do the same but with scaling
-    X_train_std = scaler.fit_transform(X_train)
-    X_test_std = scaler.fit_transform(X_test)
+    preprocessor = ColumnTransformer([("numeric", Pipeline([
+        ("imputer", KNNImputer(n_neighbors=5)),
+        ("scaler", StandardScaler())]), numeric_cols),
 
-    # fit model and make predictions
-    model = LogisticRegression()
-    model.fit(X_train_std, y_train)
+    ("binary", Pipeline([
+        ("imputer", KNNImputer(n_neighbors=5))
+    ]), binary_cols)
+])
 
-    prediction = model.predict(X_test_std)
+    
 
-    accuracy = accuracy_score(y_test, prediction)
-    report = classification_report(y_test, prediction)
-    cm = confusion_matrix(y_test, prediction)
-    ConfusionMatrixDisplay(cm).plot()
-    #plt.show()
+   
 
-    print(f"Accuracy: {accuracy}")
-    print(f"Classification Report: {report}")
+   
 
 
     models = {
@@ -75,6 +77,33 @@ if __name__ == "__main__":
 
         "KNN" : KNeighborsClassifier(n_neighbors=5)
     }
+
+    for name, model in models.items():
+
+
+        pipeline = Pipeline([("preprocessor", preprocessor),("model", model)])
+        
+
+
+        pipeline.fit(X_train, y_train)
+
+        predictions = pipeline.predict(X_test)
+
+        accuracy = accuracy_score(y_test, predictions)
+
+        print("\n==============")
+        print(name)
+        print("\n==============")
+        print(f"Accuracy: {accuracy:.4f}")
+        print(classification_report(y_test,predictions))
+
+
+        cm = confusion_matrix(y_test, predictions)
+        ConfusionMatrixDisplay(cm).plot()
+        plt.title(name)
+        plt.show()
+              
+
 
 """TO-DO -
 - create model pipeline as showed in class example
