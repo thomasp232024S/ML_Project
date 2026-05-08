@@ -28,87 +28,48 @@ df = extract_features(
 
 if __name__ == "__main__":
     
+    df = extract_features("clinical.project-tcga-luad.2026-03-30.json", "biospecimen.project-tcga-luad.2026-03-30.json")
+
     y = df["vital_status"]
     X = df.drop(columns=["vital_status", "case_id"])
 
-    binary_cols = [col for col in X.columns if X[col].dropna().nunique() == 2]
-    numeric_cols = [col for col in X.columns if col not in binary_cols]
+    # impute on everything before splitting
+    imputer.fit(X)
+    X = pd.DataFrame(imputer.transform(X), columns=X.columns, index=X.index)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=0.25,
-        random_state=12,
-        stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=12)
 
-    preprocessor = ColumnTransformer([("numeric", Pipeline([
-        ("imputer", KNNImputer(n_neighbors=5)),
-        ("scaler", StandardScaler())]), numeric_cols),
+    # fit scaler
+    X_train_std = scaler.fit_transform(X_train)
+    X_test_std = scaler.fit_transform(X_test)
 
-    ("binary", Pipeline([
-        ("imputer", KNNImputer(n_neighbors=5))
-    ]), binary_cols)
-])
+    pipe_lr = Pipeline([("model", LogisticRegression())])
+    pipe_svm = Pipeline([("model", SVC(kernel='rbf', probability=True))])
+    pipe_knn = Pipeline([("model", KNeighborsClassifier(n_neighbors=5))])
+    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=5, random_state=12))])
+    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=100, random_state=12))])
 
-    
-
-   
-
-   
-
-
-    models = {
-        "Logistic Regression" : LogisticRegression(
-            max_iter=1000,
-            class_weight="balanced"
-        ),
-
-        "Decision Tree" : DecisionTreeClassifier(
-            max_depth=5,
-            random_state=12
-        ),
-        
-        "Random Forest" : RandomForestClassifier(
-            n_estimators=100,
-            random_state=12
-        ),
-
-        "SVM" : SVC(kernel='rbf',probability = True),
-
-        "KNN" : KNeighborsClassifier(n_neighbors=5)
-    }
-
-    for name, model in models.items():
-
-
-        pipeline = Pipeline([("preprocessor", preprocessor),("model", model)])
-        
-
-
-        pipeline.fit(X_train, y_train)
-
-        predictions = pipeline.predict(X_test)
-
+    def evaluate(pipe, name, X_tr, X_te):
+        pipe.fit(X_tr, y_train)
+        predictions = pipe.predict(X_te)
         accuracy = accuracy_score(y_test, predictions)
 
-        print("\n==============")
-        print(name)
-        print("\n==============")
+        print(f"\n==============")
+        print(f"{name}")
+        print(f"==============")
         print(f"Accuracy: {accuracy:.4f}")
-        print(classification_report(y_test,predictions))
-
+        print(classification_report(y_test, predictions))
 
         cm = confusion_matrix(y_test, predictions)
         ConfusionMatrixDisplay(cm).plot()
         plt.title(name)
         plt.show()
-              
 
+    # scaled models
+    evaluate(pipe_lr, "Logistic Regression", X_train_std, X_test_std)
+    evaluate(pipe_svm, "SVM", X_train_std, X_test_std)
+    evaluate(pipe_knn, "KNN", X_train_std, X_test_std)
 
-"""TO-DO -
-- create model pipeline as showed in class example
-- improve model accuracy by feature manipulation
-- remove scaling on already binary features
-"""
-
-    
+    # tree models don't need scaling
+    evaluate(pipe_dt, "Decision Tree", X_train, X_test)
+    evaluate(pipe_rf, "Random Forest", X_train, X_test)
