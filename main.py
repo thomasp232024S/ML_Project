@@ -25,85 +25,40 @@ imputer = KNNImputer(n_neighbors=5, weights="uniform")
 
 
 if __name__ == "__main__":
-    df = extract_features(
-        "clinical.project-tcga-luad.2026-03-30.json",
-        "biospecimen.project-tcga-luad.2026-03-30.json"
-    )
+    
+    df = extract_features("clinical.project-tcga-luad.2026-03-30.json", "biospecimen.project-tcga-luad.2026-03-30.json")
+
     y = df["vital_status"]
     X = df.drop(columns=["vital_status", "case_id"])
 
-    X = imputer.fit_transform(X)
+    # impute on everything before splitting
+    imputer.fit(X)
+    X = pd.DataFrame(imputer.transform(X), columns=X.columns, index=X.index)
 
-    # binary_cols = [col for col in X.columns if X[col].dropna().nunique() == 2]
-    # numeric_cols = [col for col in X.columns if col not in binary_cols]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=12)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=0.25,
-        random_state=12
-    )
+    # fit scaler
+    X_train_std = scaler.fit_transform(X_train)
+    X_test_std = scaler.fit_transform(X_test)
 
-#     preprocessor = ColumnTransformer([("numeric", Pipeline([
-#         ("imputer", KNNImputer(n_neighbors=5)),
-#         ("scaler", StandardScaler())]), numeric_cols),
-#
-#     ("binary", Pipeline([
-#         ("imputer", KNNImputer(n_neighbors=5))
-#     ]), binary_cols)
-# ])
+    pipe_lr = Pipeline([("model", LogisticRegression())])
+    pipe_svm = Pipeline([("model", SVC(kernel='rbf', probability=True))])
+    pipe_knn = Pipeline([("model", KNeighborsClassifier(n_neighbors=5))])
+    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2, random_state=12))])
+    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300, random_state=12))])
 
-    
-
-   
-
-   
-
-
-    models = {
-        "Logistic Regression" : LogisticRegression(
-            max_iter=100000
-        ),
-
-        "Decision Tree" : DecisionTreeClassifier(
-            max_depth=2,
-            random_state=12
-        ),
-        
-        "Random Forest" : RandomForestClassifier(
-            n_estimators=300,
-            random_state=12
-        ),
-
-        "SVM" : SVC(kernel='rbf'),
-
-        "KNN" : KNeighborsClassifier(n_neighbors=5)
-    }
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.fit_transform(X_test)
-
-
-    for name, model in models.items():
-
-        if name == "Decision Tree" or name == "Random Forest":
-            use_x_train = X_train
-            use_x_test = X_test
-        else:
-            use_x_train = X_train_scaled
-            use_x_test = X_test_scaled
-
-        model.fit(use_x_train, y_train)
-
-        predictions = model.predict(use_x_test)
-
+    def evaluate(pipe, name, X_tr, X_te):
+        pipe.fit(X_tr, y_train)
+        predictions = pipe.predict(X_te)
         accuracy = accuracy_score(y_test, predictions)
         try:
             auroc = roc_auc_score(y_test, model.predict_proba(X_test)[:,1])
         except:
             print("error")
 
-        print("\n==============")
-        print(name)
-        print("\n==============")
+        print(f"\n==============")
+        print(f"{name}")
+        print(f"==============")
         print(f"Accuracy: {accuracy:.4f}")
         print(f"AUROC: {auroc:.4f}")
         print(classification_report(y_test,predictions))
@@ -114,14 +69,11 @@ if __name__ == "__main__":
         plt.title(name)
         plt.show()
 
+    # scaled models
+    evaluate(pipe_lr, "Logistic Regression", X_train_std, X_test_std)
+    evaluate(pipe_svm, "SVM", X_train_std, X_test_std)
+    evaluate(pipe_knn, "KNN", X_train_std, X_test_std)
 
-              
-
-
-"""TO-DO -
-- create model pipeline as showed in class example
-- improve model accuracy by feature manipulation
-- remove scaling on already binary features
-"""
-
-    
+    # tree models don't need scaling
+    evaluate(pipe_dt, "Decision Tree", X_train, X_test)
+    evaluate(pipe_rf, "Random Forest", X_train, X_test)
