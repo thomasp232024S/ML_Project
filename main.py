@@ -32,8 +32,8 @@ if __name__ == "__main__":
     X = df.drop(columns=["vital_status", "case_id"])
 
     # impute on everything before splitting
-    imputer.fit(X)
-    X = pd.DataFrame(imputer.transform(X), columns=X.columns, index=X.index)
+    #imputer.fit(X)
+    X = imputer.fit_transform(X)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=12)
 
@@ -42,19 +42,16 @@ if __name__ == "__main__":
     X_test_std = scaler.fit_transform(X_test)
 
     pipe_lr = Pipeline([("model", LogisticRegression())])
-    pipe_svm = Pipeline([("model", SVC(kernel='rbf', probability=True))])
-    pipe_knn = Pipeline([("model", KNeighborsClassifier(n_neighbors=5))])
-    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2, random_state=12))])
-    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300, random_state=12))])
+    pipe_svm = Pipeline([("model", SVC(probability=True))])
+    pipe_knn = Pipeline([("model", KNeighborsClassifier())])
+    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2))])
+    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300))])
 
     def evaluate(pipe, name, X_tr, X_te):
         pipe.fit(X_tr, y_train)
         predictions = pipe.predict(X_te)
         accuracy = accuracy_score(y_test, predictions)
-        try:
-            auroc = roc_auc_score(y_test, model.predict_proba(X_test)[:,1])
-        except:
-            print("error")
+        auroc = roc_auc_score(y_test, pipe.predict_proba(X_te)[:,1])
 
         print(f"\n==============")
         print(f"{name}")
