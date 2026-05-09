@@ -46,8 +46,8 @@ if __name__ == "__main__":
     pipe_lr = Pipeline([("model", LogisticRegression())])
     pipe_svm = Pipeline([("model", SVC(kernel='rbf', probability=True))])
     pipe_knn = Pipeline([("model", KNeighborsClassifier(n_neighbors=5))])
-    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=5, random_state=12))])
-    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=100, random_state=12))])
+    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2, random_state=12))])
+    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300, random_state=12))])
 
     def evaluate(pipe, name, X_tr, X_te):
         pipe.fit(X_tr, y_train)
