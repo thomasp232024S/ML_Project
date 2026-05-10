@@ -41,11 +41,11 @@ if __name__ == "__main__":
     X_train_std = scaler.fit_transform(X_train)
     X_test_std = scaler.fit_transform(X_test)
 
-    pipe_lr = Pipeline([("model", LogisticRegression())])
+    pipe_lr = Pipeline([("model", LogisticRegression(random_state=12))])
     pipe_svm = Pipeline([("model", SVC(probability=True))])
     pipe_knn = Pipeline([("model", KNeighborsClassifier())])
-    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2))])
-    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300))])
+    pipe_dt = Pipeline([("model", DecisionTreeClassifier(max_depth=2, random_state=12))])
+    pipe_rf = Pipeline([("model", RandomForestClassifier(n_estimators=300, random_state=12))])
 
     def evaluate(pipe, name, X_tr, X_te):
         pipe.fit(X_tr, y_train)
