@@ -2,6 +2,7 @@
 
 The models can be run with the command `python main.py`.
 
+The code is developed with python 3, which will be required to run it.
 The code requires a number of libraries, contained in `requirements.txt`.
 They can be installed with `pip install -r requirements.txt`, or via another build system.
 
